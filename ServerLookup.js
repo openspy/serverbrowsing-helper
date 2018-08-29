@@ -13,17 +13,18 @@ ServerLookup.prototype.getServerInfo = function(server_key, basic_lookup_keys) {
                 for(var i in res) {
                     server_obj.custkeys[basic_lookup_keys[i]] = res[i];
                 }
-                this.redisQueryConnection.hmget(server_key, ["wan_ip", "wan_port", "gameid"], function(err, res) {
+                this.redisQueryConnection.hmget(server_key, ["wan_ip", "wan_port", "gameid", "deleted"], function(err, res) {
                     if(err) return reject(err);
                     server_obj.ip = res[0];
                     server_obj.port = res[1];
                     server_obj.gameid = res[2];
+                    server_obj.deleted = res[3];
                     resolve(server_obj);
                 }.bind(this));
             }.bind(this));
         }.bind(this));
     }.bind(this));
-}
+};
 
 ServerLookup.prototype.getAllServers = function() {
     return new Promise(function(resolve, reject) {

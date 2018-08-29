@@ -7,12 +7,16 @@ function ServerEventHandler(discord_webhook_url, redisConnection, server_lookup,
     this.discord_webhook_url = URL.parse(discord_webhook_url);
     this.server_lookup = server_lookup;
     this.game_lookup = game_lookup;
-
-    this.resyncGroupServerCount();
 }
 
 ServerEventHandler.prototype.zeroGroupServerCount = function() {
     return new Promise(function(resolve, reject) {
+        var deleteCount = 0, deleteCompletes = 0, finishedScanning = false;
+        var tryResolve = function() {
+            if(deleteCount == deleteCompletes) {
+                resolve();
+            }
+        };
         this.redisConnection.select(GROUPS_DB, function(err) {
             if(err) return reject(err);
             var handleScanResults;
@@ -23,12 +27,19 @@ ServerEventHandler.prototype.zeroGroupServerCount = function() {
                 if(err) return reject(err);
                 var val = parseInt(res[0]);
                 for(key of res[1]) {
-                    this.redisConnection.hdel(key, "numservers");
+                    deleteCount++;
+                    this.redisConnection.hdel(key, "numservers", function(err, count) {
+                        deleteCompletes++;
+                        if(finishedScanning) {
+                            tryResolve();
+                        }
+                    });
                 }
                 if(val != 0) {
                     performScan(val);
                 } else {
-                    resolve();
+                    finishedScanning = true;
+                    tryResolve();
                 }
             }.bind(this);
             performScan(0);
@@ -42,7 +53,7 @@ ServerEventHandler.prototype.resyncGroupServerCount = function() {
             this.server_lookup.getAllServers().then(function(servers) {
                 for(var server_key of servers) {
                     this.server_lookup.getServerInfo(server_key, ["groupid"]).then(function(key, server_info) {
-                        if(!server_info.custkeys.groupid) return;
+                        if(!server_info.custkeys.groupid || server_info.deleted) return;
                         var game_key = key.split(':')[0];
                         var group_key = game_key + ":" + server_info.custkeys.groupid;
                         this.offsetGroupServerCount(group_key, 1);
