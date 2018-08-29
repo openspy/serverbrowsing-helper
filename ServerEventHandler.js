@@ -130,7 +130,6 @@ ServerEventHandler.prototype.sendNotification = function(url, message) {
 }
 
 
-//3546d58093237eb33b2a96bb813370d846ffcec8
 ServerEventHandler.prototype.performServerSecurityChecks = function(game_info, server_key) {
     if(game_info.gamename == "flatout2pc") {
         this.performFlatout2SecurityChecks(server_key);
@@ -142,14 +141,14 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
         //invalid car class/type check
         var is_valid = true;
         if((server_obj.custkeys.car_class && server_obj.custkeys.car_type)) {
-            var car_class_match = server_obj.custkeys.car_class.match(/^[0-9]$/g);
-            var car_type_match = server_obj.custkeys.car_type.match(/^[0-9]$/g);
+            var car_class_match = server_obj.custkeys.car_class.match(/^[0-9]+$/g);
+            var car_type_match = server_obj.custkeys.car_type.match(/^[0-9]+$/g);
             if((car_class_match && car_class_match.length > 0) && (car_type_match && car_type_match.length > 0)) {
                 var car_class = parseInt(server_obj.custkeys.car_class, 10);
                 var car_type = parseInt(server_obj.custkeys.car_type, 10);
         
                 if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
-                    if((car_class < 0 || car_class > 4) && !(car_class >= 100 && car_class <= 101)) {
+                    if((car_class < 0 || car_class > 3) && !(car_class >= 100 && car_class <= 101)) {
                         is_valid = false;
                     } else if(car_type < 0 || car_type > 49) {
                         is_valid = false;
@@ -183,7 +182,7 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
         }
         if(!is_valid) {
             this.server_lookup.deleteServer(server_key).then(function() {
-                var message = "`Removed flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") with invalid car_class or car_type ("+server_obj.custkeys.car_class+","+server_obj.custkeys.car_type+")`";
+                var message = "`Removed flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") with invalid car_class or car_type ("+server_obj.custkeys.car_class+","+server_obj.custkeys.car_type+") with datachecksum ("+server_obj.custkeys.datachecksum+")`";
                 this.sendPrivateNotification(message);
             }.bind(this));
         }
