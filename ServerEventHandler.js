@@ -141,47 +141,39 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
 
         //invalid car class/type check
         var is_valid = true;
-        var car_class = parseInt(server_obj.custkeys.car_class, 10);
-        var car_type = parseInt(server_obj.custkeys.car_type, 10);
-
-        if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
-            if(!isNaN(server_obj.custkeys.car_class) || !isNaN(server_obj.custkeys.car_type)) {
-                is_valid = false;
-            } else {
+        if(isNaN(server_obj.custkeys.car_class) || isNaN(server_obj.custkeys.car_type)) {
+            var car_class = parseInt(server_obj.custkeys.car_class, 10);
+            var car_type = parseInt(server_obj.custkeys.car_type, 10);
+    
+            if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
                 if(car_class < 0 || car_class > 4) {
                     is_valid = false;
                 } else if(car_type < 0 || car_type > 49) {
                     is_valid = false;
                 }
-            }
-        } else if(server_obj.custkeys.datachecksum == "d3c757a47b748b43d3ddcd8a40c9e9aff24e65a2") {
-            if(!isNaN(server_obj.custkeys.car_class) || !isNaN(server_obj.custkeys.car_type)) {
-                is_valid = false;
-            } else {
+            } else if(server_obj.custkeys.datachecksum == "d3c757a47b748b43d3ddcd8a40c9e9aff24e65a2") {
                 if(car_type < 0 || car_type > 144) {
                     is_valid = false;
                 }
                 if(car_class < 0) {
                     is_valid = false;
                 }
-                if(car_class > 3 && car_class < 100 || car_class > 101) {
+                if((car_class > 3 && car_class < 100) || car_class > 101) {
                     is_valid = false;
                 }
-            }
-        } else if(server_obj.custkeys.datachecksum == "f0776893196e7c8518b3e3fe4f241b6602d8a0b3") {
-            if(!isNaN(server_obj.custkeys.car_class) || !isNaN(server_obj.custkeys.car_type)) {
-                is_valid = false;
-            } else {
+            } else if(server_obj.custkeys.datachecksum == "f0776893196e7c8518b3e3fe4f241b6602d8a0b3") {
                 if(car_type < 0 || car_type > 94) {
                     is_valid = false;
                 }
                 if(car_class < 0) {
                     is_valid = false;
                 }
-                if(car_class > 3 && car_class < 100 || car_class > 101) {
+                if((car_class > 3 && car_class < 100) || car_class > 101) {
                     is_valid = false;
                 }
             }
+        } else {
+            is_valid = false;
         }
         if(!is_valid) {
             this.server_lookup.deleteServer(server_key).then(function() {
