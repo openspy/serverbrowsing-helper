@@ -24,4 +24,28 @@ ServerLookup.prototype.getServerInfo = function(server_key, basic_lookup_keys) {
         }.bind(this));
     }.bind(this));
 }
+
+ServerLookup.prototype.getAllServers = function() {
+    return new Promise(function(resolve, reject) {
+        var servers = [];
+        this.redisQueryConnection.select(this.SERVER_DB, function(err) {
+            if(err) return reject(err);
+            var handleScanResults;
+            var performScan = function(cursor) {
+                this.redisQueryConnection.scan(cursor, "MATCH", "*:*:*:",handleScanResults);
+            }.bind(this);
+            handleScanResults = function(err, res) {
+                var val = parseInt(res[0]);
+                servers = servers.concat(res[1]);
+
+                if(val != 0) {
+                    performScan(val);
+                } else {
+                    resolve(servers);
+                }
+            }.bind(this);
+            performScan(0);
+        }.bind(this));
+    }.bind(this));
+};
 module.exports = ServerLookup;

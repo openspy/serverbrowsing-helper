@@ -29,10 +29,10 @@ GameLookup.prototype.getGameInfoById = function(game_id) {
 
 GameLookup.prototype.getGameInfoByKey = function(key) {
     return new Promise(function(resolve, reject) {
-        if(err) return reject(err);
         var game_data = {};
         var lookup_data = ["gameid", "gamename", "secretkey", "description", "queryport", "disabled_services"];
         this.redisQueryConnection.hmget(key, lookup_data, function(err, res) {
+            if(err) return reject(err);
             for(var i in lookup_data) {
                 game_data[lookup_data[i]] = res[i];
             }
