@@ -138,39 +138,45 @@ ServerEventHandler.prototype.performServerSecurityChecks = function(game_info, s
 };
 ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key) {
     this.server_lookup.getServerInfo(server_key, ["datachecksum", "car_class", "car_type"]).then(function(server_obj) {
-
+        if(server_obj.deleted) return;
         //invalid car class/type check
         var is_valid = true;
-        if(!isNaN(server_obj.custkeys.car_class) && !isNaN(server_obj.custkeys.car_type)) {
-            var car_class = parseInt(server_obj.custkeys.car_class, 10);
-            var car_type = parseInt(server_obj.custkeys.car_type, 10);
-    
-            if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
-                if(car_class < 0 || car_class > 4) {
-                    is_valid = false;
-                } else if(car_type < 0 || car_type > 49) {
-                    is_valid = false;
+        if((server_obj.custkeys.car_class && server_obj.custkeys.car_type)) {
+            var car_class_match = server_obj.custkeys.car_class.match(/^[0-9]$/g);
+            var car_type_match = server_obj.custkeys.car_type.match(/^[0-9]$/g);
+            if((car_class_match && car_class_match.length > 0) && (car_type_match && car_type_match.length > 0)) {
+                var car_class = parseInt(server_obj.custkeys.car_class, 10);
+                var car_type = parseInt(server_obj.custkeys.car_type, 10);
+        
+                if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
+                    if((car_class < 0 || car_class > 4) && !(car_class >= 100 && car_class <= 101)) {
+                        is_valid = false;
+                    } else if(car_type < 0 || car_type > 49) {
+                        is_valid = false;
+                    }
+                } else if(server_obj.custkeys.datachecksum == "d3c757a47b748b43d3ddcd8a40c9e9aff24e65a2") {
+                    if(car_type < 0 || car_type > 144) {
+                        is_valid = false;
+                    }
+                    if(car_class < 0) {
+                        is_valid = false;
+                    }
+                    if((car_class > 3 && car_class < 100) || car_class > 101) {
+                        is_valid = false;
+                    }
+                } else if(server_obj.custkeys.datachecksum == "f0776893196e7c8518b3e3fe4f241b6602d8a0b3") {
+                    if(car_type < 0 || car_type > 94) {
+                        is_valid = false;
+                    }
+                    if(car_class < 0) {
+                        is_valid = false;
+                    }
+                    if((car_class > 3 && car_class < 100) || car_class > 101) {
+                        is_valid = false;
+                    }
                 }
-            } else if(server_obj.custkeys.datachecksum == "d3c757a47b748b43d3ddcd8a40c9e9aff24e65a2") {
-                if(car_type < 0 || car_type > 144) {
-                    is_valid = false;
-                }
-                if(car_class < 0) {
-                    is_valid = false;
-                }
-                if((car_class > 3 && car_class < 100) || car_class > 101) {
-                    is_valid = false;
-                }
-            } else if(server_obj.custkeys.datachecksum == "f0776893196e7c8518b3e3fe4f241b6602d8a0b3") {
-                if(car_type < 0 || car_type > 94) {
-                    is_valid = false;
-                }
-                if(car_class < 0) {
-                    is_valid = false;
-                }
-                if((car_class > 3 && car_class < 100) || car_class > 101) {
-                    is_valid = false;
-                }
+            } else {
+                is_valid = false;
             }
         } else {
             is_valid = false;
