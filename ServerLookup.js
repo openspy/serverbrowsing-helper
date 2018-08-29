@@ -49,4 +49,17 @@ ServerLookup.prototype.getAllServers = function() {
         }.bind(this));
     }.bind(this));
 };
+
+ServerLookup.prototype.deleteServer = function(server_key) {
+    return new Promise(function(resolve, reject) {
+        this.redisQueryConnection.select(this.SERVER_DB, function(err) {
+            if(err) return reject(err);
+
+            this.redisQueryConnection.hset(server_key, "deleted", 1, function(err, reply) {
+                if(err) return reject(err);
+                resolve();
+            }.bind(this));
+        }.bind(this));
+    }.bind(this));
+}
 module.exports = ServerLookup;

@@ -2,9 +2,9 @@ const GROUPS_DB = 1;
 const URL = require('url');
 const https = require('https');
 
-function ServerEventHandler(discord_webhook_url, redisConnection, server_lookup, game_lookup) {
+function ServerEventHandler(webhooks, redisConnection, server_lookup, game_lookup) {
     this.redisConnection = redisConnection;
-    this.discord_webhook_url = URL.parse(discord_webhook_url);
+    this.webhooks = {serverUpdates: URL.parse(webhooks.serverUpdates), backendNotifications: URL.parse(webhooks.backendNotifications)};
     this.server_lookup = server_lookup;
     this.game_lookup = game_lookup;
 }
@@ -61,7 +61,7 @@ ServerEventHandler.prototype.resyncGroupServerCount = function() {
                 }.bind(this, server_key));
                 promises.push(p);
             }
-            Proise.all(promises).then(resolve);
+            Promise.all(promises).then(resolve);
     }.bind(this));
 }
 
@@ -79,6 +79,8 @@ ServerEventHandler.prototype.handleSBUpdate = function(type, server_key) {
         
         this.game_lookup.getGameInfoById(server_obj.gameid).then(function(game_info) {
             if(!game_info) return;
+
+            this.performServerSecurityChecks(game_info, server_key);
             var server_details = "]\n`\n`Game: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`";
             var message;
             switch(type) {
@@ -104,7 +106,15 @@ ServerEventHandler.prototype.handleSBUpdate = function(type, server_key) {
 }
 
 ServerEventHandler.prototype.sendGeneralUpdatesMessage = function(message) {
-    var options = this.discord_webhook_url;
+    this.sendNotification(this.webhooks.serverUpdates, message);
+};
+
+ServerEventHandler.prototype.sendPrivateNotification = function(message) {
+    this.sendNotification(this.webhooks.backendNotifications, message);
+}
+
+ServerEventHandler.prototype.sendNotification = function(url, message) {
+    var options = URL.parse;
     var post_data = {content: message};
     var json_string = JSON.stringify(post_data);
     options.headers = {'Content-Type': "application/json", "Content-Length": Buffer.byteLength(json_string)};
@@ -117,6 +127,69 @@ ServerEventHandler.prototype.sendGeneralUpdatesMessage = function(message) {
 
     post_req.write(json_string);
     post_req.end();
+}
+
+
+//3546d58093237eb33b2a96bb813370d846ffcec8
+ServerEventHandler.prototype.performServerSecurityChecks = function(game_info, server_key) {
+    if(game_info.gamename == "flatout2pc") {
+        this.performFlatout2SecurityChecks(server_key);
+    }
 };
+ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key) {
+    this.server_lookup.getServerInfo(server_key, ["datachecksum", "car_class", "car_type"]).then(function(server_obj) {
+
+        //invalid car class/type check
+        var is_valid = true;
+        var car_class = parseInt(server_obj.custkeys.car_class, 10);
+        var car_type = parseInt(server_obj.custkeys.car_type, 10);
+
+        if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
+            if(!isNaN(server_obj.custkeys.car_class) || !isNaN(server_obj.custkeys.car_type)) {
+                is_valid = false;
+            } else {
+                if(car_class < 0 || car_class > 4) {
+                    is_valid = false;
+                } else if(car_type < 0 || car_type > 49) {
+                    is_valid = false;
+                }
+            }
+        } else if(server_obj.custkeys.datachecksum == "d3c757a47b748b43d3ddcd8a40c9e9aff24e65a2") {
+            if(!isNaN(server_obj.custkeys.car_class) || !isNaN(server_obj.custkeys.car_type)) {
+                is_valid = false;
+            } else {
+                if(car_type < 0 || car_type > 144) {
+                    is_valid = false;
+                }
+                if(car_class < 0) {
+                    is_valid = false;
+                }
+                if(car_class > 3 && car_class < 100 || car_class > 101) {
+                    is_valid = false;
+                }
+            }
+        } else if(server_obj.custkeys.datachecksum == "f0776893196e7c8518b3e3fe4f241b6602d8a0b3") {
+            if(!isNaN(server_obj.custkeys.car_class) || !isNaN(server_obj.custkeys.car_type)) {
+                is_valid = false;
+            } else {
+                if(car_type < 0 || car_type > 94) {
+                    is_valid = false;
+                }
+                if(car_class < 0) {
+                    is_valid = false;
+                }
+                if(car_class > 3 && car_class < 100 || car_class > 101) {
+                    is_valid = false;
+                }
+            }
+        }
+        if(!is_valid) {
+            this.server_lookup.deleteServer(server_key).then(function() {
+                var message = "`Removed flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") with invalid car_class or car_type ("+server_obj.custkeys.car_class+","+server_obj.custkeys.car_type+")`";
+                this.sendPrivateNotification(message);
+            }.bind(this));
+        }
+    }.bind(this));
+}
 
 module.exports = ServerEventHandler;
