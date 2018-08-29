@@ -114,7 +114,7 @@ ServerEventHandler.prototype.sendPrivateNotification = function(message) {
 }
 
 ServerEventHandler.prototype.sendNotification = function(url, message) {
-    var options = URL.parse;
+    var options = url;
     var post_data = {content: message};
     var json_string = JSON.stringify(post_data);
     options.headers = {'Content-Type': "application/json", "Content-Length": Buffer.byteLength(json_string)};
@@ -141,7 +141,7 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
 
         //invalid car class/type check
         var is_valid = true;
-        if(isNaN(server_obj.custkeys.car_class) || isNaN(server_obj.custkeys.car_type)) {
+        if(!isNaN(server_obj.custkeys.car_class) && !isNaN(server_obj.custkeys.car_type)) {
             var car_class = parseInt(server_obj.custkeys.car_class, 10);
             var car_type = parseInt(server_obj.custkeys.car_type, 10);
     
