@@ -48,19 +48,20 @@ ServerEventHandler.prototype.zeroGroupServerCount = function() {
 };
 
 ServerEventHandler.prototype.resyncGroupServerCount = function() {
-    return new Promise(function(resolve, reject) {
-        this.zeroGroupServerCount().then(function() {
-            this.server_lookup.getAllServers().then(function(servers) {
-                for(var server_key of servers) {
-                    this.server_lookup.getServerInfo(server_key, ["groupid"]).then(function(key, server_info) {
-                        if(!server_info.custkeys.groupid || server_info.deleted) return;
-                        var game_key = key.split(':')[0];
-                        var group_key = game_key + ":" + server_info.custkeys.groupid;
-                        this.offsetGroupServerCount(group_key, 1);
-                    }.bind(this, server_key));
-                }
-            }.bind(this));
-        }.bind(this));
+    return new Promise(async function(resolve, reject) {
+        var promises = [];
+        await this.zeroGroupServerCount();
+            var servers = await this.server_lookup.getAllServers();
+            for(var server_key of servers) {
+                var p = this.server_lookup.getServerInfo(server_key, ["groupid"]).then(function(key, server_info) {
+                    if(!server_info.custkeys.groupid || server_info.deleted) return;
+                    var game_key = key.split(':')[0];
+                    var group_key = game_key + ":" + server_info.custkeys.groupid;
+                    this.offsetGroupServerCount(group_key, 1);
+                }.bind(this, server_key));
+                promises.push(p);
+            }
+            Proise.all(promises).then(resolve);
     }.bind(this));
 }
 
