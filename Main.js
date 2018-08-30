@@ -15,6 +15,15 @@ function serverEventHandler(type, server_key) {
 }
 
 var server_event_listener;
-server_event_handler.resyncGroupServerCount().then(function() {
-    server_event_listener = new ServerEventListener(redis.createClient(redisURL), serverEventHandler);
-})
+server_lookup.getAllServers().then(function(servers) {
+    var promises = [];
+    for(var server of servers) {
+        promises.push(server_event_handler.handleSBUpdate("update", server, true));  
+    }
+    Promise.all(promises).then(function() {
+        server_event_handler.resyncGroupServerCount().then(function() {
+            server_event_listener = new ServerEventListener(redis.createClient(redisURL), serverEventHandler);
+        })
+    })
+    
+});

@@ -73,34 +73,40 @@ ServerEventHandler.prototype.offsetGroupServerCount = function(group_key, diff) 
     }.bind(this));
 };
 
-ServerEventHandler.prototype.handleSBUpdate = function(type, server_key) {
-    this.server_lookup.getServerInfo(server_key, ["hostname", "groupid", "mapname", "numplayers", "maxplayers"]).then(function(server_obj) {
-        if(!server_obj) return;
-        
-        this.game_lookup.getGameInfoById(server_obj.gameid).then(function(game_info) {
-            if(!game_info) return;
-
-            this.performServerSecurityChecks(game_info, server_key);
-            var server_details = "]\n`\n`Game: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`";
-            var message;
-            switch(type) {
-                case 'new':
-                    message = "`[New Server";
-                    if(server_obj.custkeys.groupid) {
-                        this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, 1);
+ServerEventHandler.prototype.handleSBUpdate = function(type, server_key, skip_message) {
+    return new Promise(function(resolve, reject) {
+        this.server_lookup.getServerInfo(server_key, ["hostname", "groupid", "mapname", "numplayers", "maxplayers"]).then(function(server_obj) {
+            if(!server_obj) return;
+            
+            this.game_lookup.getGameInfoById(server_obj.gameid).then(function(game_info) {
+                if(!game_info) return;
+    
+                this.performServerSecurityChecks(server_obj.gameid, server_key).then(function(is_valid) {
+                    if(is_valid && !skip_message) {
+                        var server_details = "]\n`\n`Game: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`";
+                        var message;
+                        switch(type) {
+                            case 'new':
+                                message = "`[New Server";
+                                if(server_obj.custkeys.groupid) {
+                                    this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, 1);
+                                }
+                            break;
+                            case 'del':
+                                if(server_obj.custkeys.groupid) {
+                                    this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, -1);
+                                }
+                                return;
+                            break;
+                            default:
+                            return;
+                        }
+                        message += server_details;
+                        this.sendGeneralUpdatesMessage(message);
                     }
-                break;
-                case 'del':
-                    if(server_obj.custkeys.groupid) {
-                        this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, -1);
-                    }
-                    return;
-                break;
-                default:
-                return;
-            }
-            message += server_details;
-            this.sendGeneralUpdatesMessage(message);
+                    resolve();
+                }.bind(this));
+            }.bind(this));
         }.bind(this));
     }.bind(this));
 }
@@ -130,62 +136,71 @@ ServerEventHandler.prototype.sendNotification = function(url, message) {
 }
 
 
-ServerEventHandler.prototype.performServerSecurityChecks = function(game_info, server_key) {
-    if(game_info.gamename == "flatout2pc") {
-        this.performFlatout2SecurityChecks(server_key);
-    }
+ServerEventHandler.prototype.performServerSecurityChecks = function(gameid, server_key) {
+    return new Promise(function(resolve, reject) {
+        if(gameid == 1420) {
+            this.performFlatout2SecurityChecks(server_key).then(resolve, reject);
+        } else {
+            resolve(true);
+        }
+    }.bind(this));
 };
 ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key) {
-    this.server_lookup.getServerInfo(server_key, ["datachecksum", "car_class", "car_type"]).then(function(server_obj) {
-        if(server_obj.deleted) return;
-        //invalid car class/type check
-        var is_valid = true;
-        if((server_obj.custkeys.car_class && server_obj.custkeys.car_type)) {
-            var car_class_match = server_obj.custkeys.car_class.match(/^[0-9]+$/g);
-            var car_type_match = server_obj.custkeys.car_type.match(/^[0-9]+$/g);
-            if((car_class_match && car_class_match.length > 0) && (car_type_match && car_type_match.length > 0)) {
-                var car_class = parseInt(server_obj.custkeys.car_class, 10);
-                var car_type = parseInt(server_obj.custkeys.car_type, 10);
-        
-                if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
-                    if((car_class < 0 || car_class > 3) && !(car_class >= 100 && car_class <= 101)) {
-                        is_valid = false;
-                    } else if(car_type < 0 || car_type > 49) {
-                        is_valid = false;
+    return new Promise(function(resolve, reject) {
+        this.server_lookup.getServerInfo(server_key, ["datachecksum", "car_class", "car_type"]).then(function(server_obj) {
+            if(server_obj.deleted) {
+                return resolve(false);
+            };
+            //invalid car class/type check
+            var is_valid = true;
+            if((server_obj.custkeys.car_class && server_obj.custkeys.car_type)) {
+                var car_class_match = server_obj.custkeys.car_class.match(/^[0-9]+$/g);
+                var car_type_match = server_obj.custkeys.car_type.match(/^[0-9]+$/g);
+                if((car_class_match && car_class_match.length > 0) && (car_type_match && car_type_match.length > 0)) {
+                    var car_class = parseInt(server_obj.custkeys.car_class, 10);
+                    var car_type = parseInt(server_obj.custkeys.car_type, 10);
+            
+                    if(server_obj.custkeys.datachecksum == "3546d58093237eb33b2a96bb813370d846ffcec8") {
+                        if((car_class < 0 || car_class > 3) && !(car_class >= 100 && car_class <= 101)) {
+                            is_valid = false;
+                        } else if(car_type < 0 || car_type > 49) {
+                            is_valid = false;
+                        }
+                    } else if(server_obj.custkeys.datachecksum == "d3c757a47b748b43d3ddcd8a40c9e9aff24e65a2") {
+                        if(car_type < 0 || car_type > 144) {
+                            is_valid = false;
+                        }
+                        if(car_class < 0) {
+                            is_valid = false;
+                        }
+                        if((car_class > 3 && car_class < 100) || car_class > 101) {
+                            is_valid = false;
+                        }
+                    } else if(server_obj.custkeys.datachecksum == "f0776893196e7c8518b3e3fe4f241b6602d8a0b3") {
+                        if(car_type < 0 || car_type > 94) {
+                            is_valid = false;
+                        }
+                        if(car_class < 0) {
+                            is_valid = false;
+                        }
+                        if((car_class > 3 && car_class < 100) || car_class > 101) {
+                            is_valid = false;
+                        }
                     }
-                } else if(server_obj.custkeys.datachecksum == "d3c757a47b748b43d3ddcd8a40c9e9aff24e65a2") {
-                    if(car_type < 0 || car_type > 144) {
-                        is_valid = false;
-                    }
-                    if(car_class < 0) {
-                        is_valid = false;
-                    }
-                    if((car_class > 3 && car_class < 100) || car_class > 101) {
-                        is_valid = false;
-                    }
-                } else if(server_obj.custkeys.datachecksum == "f0776893196e7c8518b3e3fe4f241b6602d8a0b3") {
-                    if(car_type < 0 || car_type > 94) {
-                        is_valid = false;
-                    }
-                    if(car_class < 0) {
-                        is_valid = false;
-                    }
-                    if((car_class > 3 && car_class < 100) || car_class > 101) {
-                        is_valid = false;
-                    }
+                } else {
+                    is_valid = false;
                 }
             } else {
                 is_valid = false;
             }
-        } else {
-            is_valid = false;
-        }
-        if(!is_valid) {
-            this.server_lookup.deleteServer(server_key).then(function() {
-                var message = "`Removed flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") with invalid car_class or car_type ("+server_obj.custkeys.car_class+","+server_obj.custkeys.car_type+") with datachecksum ("+server_obj.custkeys.datachecksum+")`";
-                this.sendPrivateNotification(message);
-            }.bind(this));
-        }
+            if(!is_valid) {
+                this.server_lookup.deleteServer(server_key).then(function() {
+                    var message = "`Removed flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") with invalid car_class or car_type ("+server_obj.custkeys.car_class+","+server_obj.custkeys.car_type+") with datachecksum ("+server_obj.custkeys.datachecksum+")`";
+                    this.sendPrivateNotification(message);
+                }.bind(this)).catch(reject);
+            }
+            resolve(is_valid);
+        }.bind(this)).catch(reject);
     }.bind(this));
 }
 
