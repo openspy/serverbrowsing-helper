@@ -190,8 +190,6 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
                 } else {
                     is_valid = false;
                 }
-            } else {
-                is_valid = false;
             }
             if(!is_valid) {
                 this.server_lookup.deleteServer(server_key).then(function() {
