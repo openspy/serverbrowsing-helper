@@ -140,6 +140,8 @@ ServerEventHandler.prototype.performServerSecurityChecks = function(gameid, serv
     return new Promise(function(resolve, reject) {
         if(gameid == 1420) {
             this.performFlatout2SecurityChecks(server_key).then(resolve, reject);
+        } else if(gameid == 1324) {
+            this.performBF2142SecurityChecks(server_key).then(resolve, reject);
         } else {
             resolve(true);
         }
@@ -199,6 +201,26 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
             }
             resolve(is_valid);
         }.bind(this)).catch(reject);
+    }.bind(this));
+}
+
+ServerEventHandler.prototype.performBF2142SecurityChecks = function(server_key) {
+    return new Promise(function(resolve, reject) {
+        this.server_lookup.getServerInfo(server_key, ["natneg", "bf2142_ranked","hostname"]).then(function(server_obj) {
+            if(server_obj.deleted) {
+                return resolve(false);
+            };
+            if(server_obj.ip == "45.32.202.165") { //Reclamation server
+                if(server_obj.natneg != "0" || server_obj.bf2142_ranked != "1") {
+                    return this.server_lookup.setCustomKeys(server_key, {natneg: "0", bf2142_ranked: "1"}).then(function() {
+                        var message = "`Override bf2142-pc server to ranked("+server_obj.ip+":"+server_obj.port+","+server_obj.hostname+","+server_key+")`";
+                        this.sendPrivateNotification(message);
+                        resolve(true);
+                    }, reject);
+                }
+            }
+            return resolve(true);
+        }.bind(this), reject);
     }.bind(this));
 }
 

@@ -62,4 +62,19 @@ ServerLookup.prototype.deleteServer = function(server_key) {
         }.bind(this));
     }.bind(this));
 }
+ServerLookup.prototype.setCustomKeys = function(server_key, cust_keys) {
+    return new Promise(function(resolve, reject) {
+        var num_resolves = 0;
+        this.redisQueryConnection.select(this.SERVER_DB, function(err) {
+            if(err) return reject(err);
+
+            this.redisQueryConnection.hmset(server_key+"custkeys", cust_keys, function(err, res) {
+                if(err) {
+                    return reject(err);
+                }
+                resolve();
+            }.bind(this));
+        }.bind(this));
+    }.bind(this));
+};
 module.exports = ServerLookup;
