@@ -211,12 +211,12 @@ ServerEventHandler.prototype.performBF2142SecurityChecks = function(server_key) 
                 return resolve(false);
             };
             if(server_obj.ip == "45.32.202.165") { //Reclamation server
-                if(server_obj.natneg != "0" || server_obj.bf2142_ranked != "1") {
+                if(server_obj.custkeys.natneg != "0" || server_obj.custkeys.bf2142_ranked != "1") {
                     return this.server_lookup.setCustomKeys(server_key, {natneg: "0", bf2142_ranked: "1"}).then(function() {
-                        var message = "`Override bf2142-pc server to ranked("+server_obj.ip+":"+server_obj.port+","+server_obj.hostname+","+server_key+")`";
+                        var message = "`Override bf2142-pc server to ranked("+server_obj.ip+":"+server_obj.port+","+server_obj.custkeys.hostname+","+server_key+")`";
                         this.sendPrivateNotification(message);
                         resolve(true);
-                    }, reject);
+                    }.bind(this), reject);
                 }
             }
             return resolve(true);
