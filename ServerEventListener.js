@@ -1,13 +1,31 @@
-function ServerEventListener(redisConnection, eventCallback) {
-    this.redisConnection = redisConnection;
+var amqp = require('amqplib/callback_api');
+
+function ServerEventListener(amqpConnection, eventCallback) {
     this.eventCallback = eventCallback;
 
-    this.redisConnection.on("message", this.handleRedisMessage.bind(this));
+    var channelCallback = this.handleChannelMessage.bind(this);
 
-    this.redisConnection.subscribe("serverbrowsing.servers");
+    amqp.connect(amqpConnection, function(err, conn) {
+        this.amqpConnection = conn;
+        
+        var ex = 'openspy.master';
+        conn.createChannel(function(err, ch) {
+            ch.assertExchange(ex, 'topic', {durable: false});
+            ch.assertQueue('', {exclusive: true}, function(err, q) {
+                ch.bindQueue(q.queue, ex, 'server.event');
+
+                ch.consume(q.queue, function(msg) {
+                    debugger;
+                    if(msg.content) {
+                        channelCallback(msg.content.toString());
+                    }
+                }, {noAck: true});
+            });
+        }.bind(this));
+    });
 }
 
-ServerEventListener.prototype.handleRedisMessage = function(channel, message) {
+ServerEventListener.prototype.handleChannelMessage = function(message) {
     var update_data = message.trimLeft().split('\\');
     switch(update_data[1]) {
         case 'del':
