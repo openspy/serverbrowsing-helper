@@ -15,7 +15,6 @@ function ServerEventListener(amqpConnection, eventCallback) {
                 ch.bindQueue(q.queue, ex, 'server.event');
 
                 ch.consume(q.queue, function(msg) {
-                    debugger;
                     if(msg.content) {
                         channelCallback(msg.content.toString());
                     }
