@@ -149,7 +149,7 @@ ServerEventHandler.prototype.performServerSecurityChecks = function(gameid, serv
 };
 ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key) {
     return new Promise(function(resolve, reject) {
-        this.server_lookup.getServerInfo(server_key, ["datachecksum", "car_class", "car_type"]).then(function(server_obj) {
+        return this.server_lookup.getServerInfo(server_key, ["datachecksum", "car_class", "car_type", "natneg"]).then(function(server_obj) {
             if(server_obj.deleted) {
                 return resolve(false);
             };
@@ -199,7 +199,15 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
                     this.sendPrivateNotification(message);
                 }.bind(this)).catch(reject);
             }
-            resolve(is_valid);
+            if(server_obj.custkeys.natneg) {
+                return resolve(is_valid);
+            }
+            return this.server_lookup.setCustomKeys(server_key, {natneg: "1"}).then(function() {
+                var message = "`Setting flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") to natneg 1";
+                this.sendPrivateNotification(message);
+                return resolve(is_valid);
+            });
+            
         }.bind(this)).catch(reject);
     }.bind(this));
 }
