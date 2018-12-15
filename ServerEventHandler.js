@@ -199,14 +199,14 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
                     this.sendPrivateNotification(message);
                 }.bind(this)).catch(reject);
             }
-            if(server_obj.custkeys.natneg) {
+            if(server_obj.custkeys.natneg == 1) {
                 return resolve(is_valid);
             }
             return this.server_lookup.setCustomKeys(server_key, {natneg: "1"}).then(function() {
-                var message = "`Setting flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") to natneg 1";
+                var message = "`Setting flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") to natneg 1`";
                 this.sendPrivateNotification(message);
                 return resolve(is_valid);
-            });
+            }.bind(this));
             
         }.bind(this)).catch(reject);
     }.bind(this));
