@@ -11,13 +11,14 @@ function ServerEventListener(amqpConnection, eventCallback) {
         var ex = 'openspy.master';
         conn.createChannel(function(err, ch) {
             ch.assertExchange(ex, 'topic', {durable: false});
-            ch.assertQueue('', {exclusive: true}, function(err, q) {
+            ch.assertQueue('serverbrowsing-helper', {durable: true}, function(err, q) {
                 ch.bindQueue(q.queue, ex, 'server.event');
 
                 ch.consume(q.queue, function(msg) {
                     if(msg.content) {
                         channelCallback(msg.content.toString());
                     }
+                    ch.ack(msg);
                 }, {noAck: true});
             });
         }.bind(this));
