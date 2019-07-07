@@ -75,7 +75,7 @@ ServerEventHandler.prototype.offsetGroupServerCount = function(group_key, diff) 
 
 ServerEventHandler.prototype.handleSBUpdate = function(type, server_key, skip_message) {
     return new Promise(function(resolve, reject) {
-        this.server_lookup.getServerInfo(server_key, ["hostname", "groupid", "mapname", "numplayers", "maxplayers"]).then(function(server_obj) {
+        this.server_lookup.getServerInfo(server_key, ["groupid"]).then(function(server_obj) {
             if(!server_obj) return;
             
             this.game_lookup.getGameInfoById(server_obj.gameid).then(function(game_info) {
@@ -83,26 +83,28 @@ ServerEventHandler.prototype.handleSBUpdate = function(type, server_key, skip_me
     
                 this.performServerSecurityChecks(server_obj.gameid, server_key).then(function(is_valid) {
                     if(is_valid && !skip_message) {
-                        var server_details = "]\n`\n`Game: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`";
-                        var message;
-                        switch(type) {
-                            case 'new':
-                                message = "`[New Server";
-                                if(server_obj.custkeys.groupid) {
-                                    this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, 1);
-                                }
-                            break;
-                            case 'del':
-                                if(server_obj.custkeys.groupid) {
-                                    this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, -1);
-                                }
+                        return this.server_lookup.getServerInfo(server_key, ["hostname", "groupid", "mapname", "numplayers", "maxplayers"]).then(function(server_obj) {
+                            var server_details = "]\n`\n`Game: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`";
+                            var message;
+                            switch(type) {
+                                case 'new':
+                                    message = "`[New Server";
+                                    if(server_obj.custkeys.groupid) {
+                                        this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, 1);
+                                    }
+                                break;
+                                case 'del':
+                                    if(server_obj.custkeys.groupid) {
+                                        this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, -1);
+                                    }
+                                    return;
+                                break;
+                                default:
                                 return;
-                            break;
-                            default:
-                            return;
-                        }
-                        message += server_details;
-                        this.sendGeneralUpdatesMessage(message);
+                            }
+                            message += server_details;
+                            this.sendGeneralUpdatesMessage(message);
+                        }.bind(this));
                     }
                     resolve();
                 }.bind(this));
@@ -142,6 +144,8 @@ ServerEventHandler.prototype.performServerSecurityChecks = function(gameid, serv
             this.performFlatout2SecurityChecks(server_key).then(resolve, reject);
         } else if(gameid == 1324) {
             this.performBF2142SecurityChecks(server_key).then(resolve, reject);
+        } else if(gameid == 2987) {
+            this.performTHUGProSecurityChecks(server_key).then(resolve, reject);
         } else {
             resolve(true);
         }
@@ -233,6 +237,28 @@ ServerEventHandler.prototype.performBF2142SecurityChecks = function(server_key) 
             }
             return resolve(true);
         }.bind(this), reject);
+    }.bind(this));
+}
+
+ServerEventHandler.prototype.performTHUGProSecurityChecks = function(server_key) {
+    return new Promise(function(resolve, reject) {
+        var password_lobbyid = "2394";
+        this.server_lookup.getServerInfo(server_key, ["hostname", "groupid", "password", "oldgroup"]).then(function(server_obj) {
+            if(server_obj.custkeys.password != "0" && server_obj.custkeys.groupid != password_lobbyid) {
+                return this.server_lookup.setCustomKeys(server_key, {groupid: password_lobbyid, oldgroup: server_obj.custkeys.groupid}).then(function() {
+                    var message = "`Override thugpro server to password lobby("+server_obj.ip+":"+server_obj.port+","+server_obj.custkeys.hostname+","+server_key+","+server_obj.custkeys.groupid+")`";
+                    this.sendPrivateNotification(message);
+                    return resolve(true);
+                }.bind(this));
+            } else if(server_obj.custkeys.password != "1" && server_obj.custkeys.groupid == password_lobbyid) {
+                return this.server_lookup.setCustomKeys(server_key, {groupid: server_obj.custkeys.oldgroup}).then(function() {
+                    var message = "`Override thugpro server from password lobby("+server_obj.ip+":"+server_obj.port+","+server_obj.custkeys.hostname+","+server_key+","+server_obj.custkeys.groupid+","+server_obj.custkeys.oldgroup+")`";
+                    this.sendPrivateNotification(message);
+                    return resolve(true);
+                }.bind(this));
+            }
+            return resolve(true);
+        }.bind(this));
     }.bind(this));
 }
 
