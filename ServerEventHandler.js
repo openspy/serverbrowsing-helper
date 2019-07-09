@@ -144,9 +144,9 @@ ServerEventHandler.prototype.performServerSecurityChecks = function(gameid, serv
             this.performFlatout2SecurityChecks(server_key).then(resolve, reject);
         } else if(gameid == 1324) {
             this.performBF2142SecurityChecks(server_key).then(resolve, reject);
-        } else if(gameid == 2987) {
+        } /*else if(gameid == 2987) {
             this.performTHUGProSecurityChecks(server_key).then(resolve, reject);
-        } else {
+        }*/ else {
             resolve(true);
         }
     }.bind(this));
