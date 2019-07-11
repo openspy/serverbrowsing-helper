@@ -20,7 +20,7 @@ function ServerEventListener(amqpConnection, eventCallback) {
                         channelCallback(msg.content.toString());
                     }
                     ch.ack(msg);
-                }, {noAck: true});
+                }, {noAck: false});
             });
         }.bind(this));
     });
