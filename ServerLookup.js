@@ -33,7 +33,7 @@ ServerLookup.prototype.getAllServers = function() {
             if(err) return reject(err);
             var handleScanResults;
             var performScan = function(cursor) {
-                this.redisQueryConnection.scan(cursor, "MATCH", "*:*:*:",handleScanResults);
+                this.redisQueryConnection.scan(cursor, "MATCH", "*:*:",handleScanResults);
             }.bind(this);
             handleScanResults = function(err, res) {
                 var val = parseInt(res[0]);
