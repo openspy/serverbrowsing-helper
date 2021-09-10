@@ -10,8 +10,16 @@ function ServerEventListener(amqpConnection, eventCallback) {
         
         var ex = 'openspy.master';
         conn.createChannel(function(err, ch) {
+            if(err) {
+                console.error(err);
+                return;
+            }
             ch.assertExchange(ex, 'topic', {durable: true});
             ch.assertQueue('serverbrowsing.helper', {durable: true}, function(err, q) {
+                if(err) {
+                    console.error(err);
+                    return;
+                }
 
                 ch.bindQueue(q.queue, ex, 'server.event');
 
