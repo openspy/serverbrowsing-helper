@@ -6,6 +6,10 @@ function ServerEventListener(amqpConnection, eventCallback) {
     var channelCallback = this.handleChannelMessage.bind(this);
 
     amqp.connect(amqpConnection, function(err, conn) {
+        if(err) {
+            console.error(err);
+            return;
+        }
         this.amqpConnection = conn;
         
         var ex = 'openspy.master';
