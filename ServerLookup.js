@@ -18,7 +18,9 @@ ServerLookup.prototype.getServerInfo = function(server_key, basic_lookup_keys) {
                     server_obj.ip = res[0];
                     server_obj.port = res[1];
                     server_obj.gameid = res[2];
-                    server_obj.deleted = res[3];
+                    var deleted = parseInt(res[3]);
+                    if(deleted == 1)
+                        server_obj.deleted = true;
                     resolve(server_obj);
                 }.bind(this));
             }.bind(this));
