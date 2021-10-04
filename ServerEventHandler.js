@@ -199,16 +199,16 @@ ServerEventHandler.prototype.performFlatout2SecurityChecks = function(server_key
             }
             if(!is_valid) {
                 this.server_lookup.deleteServer(server_key).then(function() {
-                    var message = "`Removed flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") with invalid car_class or car_type ("+server_obj.custkeys.car_class+","+server_obj.custkeys.car_type+") with datachecksum ("+server_obj.custkeys.datachecksum+")`";
-                    this.sendPrivateNotification(message);
+                    // var message = "`Removed flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") with invalid car_class or car_type ("+server_obj.custkeys.car_class+","+server_obj.custkeys.car_type+") with datachecksum ("+server_obj.custkeys.datachecksum+")`";
+                    // this.sendPrivateNotification(message);
                 }.bind(this)).catch(reject);
             }
             if(server_obj.custkeys.natneg == 1) {
                 return resolve(is_valid);
             }
             return this.server_lookup.setCustomKeys(server_key, {natneg: "1"}).then(function() {
-                var message = "`Setting flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") to natneg 1`";
-                this.sendPrivateNotification(message);
+                // var message = "`Setting flatout2pc server("+server_obj.ip+":"+server_obj.port+","+server_key+") to natneg 1`";
+                // this.sendPrivateNotification(message);
                 return resolve(is_valid);
             }.bind(this));
             
@@ -224,8 +224,8 @@ ServerEventHandler.prototype.performBF2142SecurityChecks = function(server_key) 
             };
             if(server_obj.custkeys.natneg != "0" || server_obj.custkeys.bf2142_ranked != "1") {
                 return this.server_lookup.setCustomKeys(server_key, {natneg: "0", bf2142_ranked: "1"}).then(function() {
-                    var message = "`Override bf2142-pc server to ranked("+server_obj.ip+":"+server_obj.port+","+server_obj.custkeys.hostname+","+server_key+")`";
-                    this.sendPrivateNotification(message);
+                    // var message = "`Override bf2142-pc server to ranked("+server_obj.ip+":"+server_obj.port+","+server_obj.custkeys.hostname+","+server_key+")`";
+                    // this.sendPrivateNotification(message);
                     resolve(true);
                 }.bind(this), reject);
             }
