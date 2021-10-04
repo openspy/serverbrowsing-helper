@@ -84,7 +84,7 @@ ServerEventHandler.prototype.handleSBUpdate = function(type, server_key, skip_me
                 this.performServerSecurityChecks(server_obj.gameid, server_key).then(function(is_valid) {
                     if(is_valid && !skip_message) {
                         return this.server_lookup.getServerInfo(server_key, ["hostname", "groupid", "mapname", "numplayers", "maxplayers"]).then(function(server_obj) {
-                            var server_details = "]\n`\n`Game: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`";
+                            var server_details = "]\nGame: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`\n\n";
                             var message;
                             switch(type) {
                                 case 'new':
