@@ -22,7 +22,7 @@ server_lookup.getAllServers().then(function(servers) {
     }
     Promise.all(promises).then(function() {
         server_event_handler.resyncGroupServerCount().then(function() {
-            server_event_listener = new ServerEventListener(process.env.RABBITMQ_URL, serverEventHandler);
+            //server_event_listener = new ServerEventListener(process.env.RABBITMQ_URL, serverEventHandler);
         })
     })
     
