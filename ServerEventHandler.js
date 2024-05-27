@@ -4,7 +4,7 @@ const https = require('https');
 
 function ServerEventHandler(webhooks, redisConnection, server_lookup, game_lookup) {
     this.redisConnection = redisConnection;
-    this.webhooks = {serverUpdates: URL.parse(webhooks.serverUpdates), backendNotifications: URL.parse(webhooks.backendNotifications)};
+    this.webhooks = {backendNotifications: URL.parse(webhooks.backendNotifications)};
     this.server_lookup = server_lookup;
     this.game_lookup = game_lookup;
 }
@@ -84,11 +84,8 @@ ServerEventHandler.prototype.handleSBUpdate = function(type, server_key, skip_me
                 this.performServerSecurityChecks(server_obj.gameid, server_key).then(function(is_valid) {
                     if(is_valid && !skip_message) {
                         return this.server_lookup.getServerInfo(server_key, ["hostname", "groupid", "mapname", "numplayers", "maxplayers"]).then(function(server_obj) {
-                            var server_details = "]\nGame: "+game_info.description+" ("+game_info.gamename+")\nHostname: "+server_obj.custkeys.hostname+"\nMap: "+server_obj.custkeys.mapname+"\nPlayers: ("+server_obj.custkeys.numplayers+"/"+server_obj.custkeys.maxplayers+")`\n\n";
-                            var message;
                             switch(type) {
                                 case 'new':
-                                    message = "`[New Server";
                                     if(server_obj.custkeys.groupid) {
                                         this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, 1);
                                     }
@@ -97,13 +94,9 @@ ServerEventHandler.prototype.handleSBUpdate = function(type, server_key, skip_me
                                     if(server_obj.custkeys.groupid) {
                                         this.offsetGroupServerCount(game_info.gamename+ ":" + server_obj.custkeys.groupid, -1);
                                     }
-                                    return;
-                                break;
                                 default:
-                                return;
+                                break;
                             }
-                            message += server_details;
-                            this.sendGeneralUpdatesMessage(message);
                         }.bind(this));
                     }
                     resolve();
@@ -113,9 +106,6 @@ ServerEventHandler.prototype.handleSBUpdate = function(type, server_key, skip_me
     }.bind(this));
 }
 
-ServerEventHandler.prototype.sendGeneralUpdatesMessage = function(message) {
-    this.sendNotification(this.webhooks.serverUpdates, message);
-};
 
 ServerEventHandler.prototype.sendPrivateNotification = function(message) {
     this.sendNotification(this.webhooks.backendNotifications, message);
